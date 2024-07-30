@@ -18,30 +18,47 @@ if file_upload is not None:
     # st.write(df)
 
     pod_options = df["User Name (First then Last)"].unique()
-    selected_pod = st.selectbox("Select your Pod", pod_options, index=None, placeholder="Pick your Pod",)
-    if selected_pod:
-        pod = df.loc[df["User Name (First then Last)"] == selected_pod, :]
+    multiselect_pods = st.multiselect("Select your Pods", pod_options, placeholder="None Selected",)
 
+    if multiselect_pods:
+        mean_duration_by_care_program = pd.Series([])
+        count_duration_by_care_program = pd.Series([])
+
+        for selected in multiselect_pods:
+            curr_pod = df.loc[df["User Name (First then Last)"] == selected, :]
+            if mean_duration_by_care_program.empty:
+                mean_duration_by_care_program = curr_pod.groupby(by=["Enrolled Care Programs"])["Duration (exact)"].mean()
+                mean_duration_by_care_program.rename(selected, inplace=True)
+            else:
+                new_pod = curr_pod.groupby(by=["Enrolled Care Programs"])["Duration (exact)"].mean()
+                new_pod.rename(selected, inplace=True)
+                mean_duration_by_care_program = pd.merge(mean_duration_by_care_program, new_pod, how="outer", on="Enrolled Care Programs")
+        
+            if count_duration_by_care_program.empty:
+                count_duration_by_care_program = curr_pod.groupby(by=["Enrolled Care Programs"])["Patient Id"].size()
+                count_duration_by_care_program.rename(selected, inplace=True)
+            else:
+                new_pod = curr_pod.groupby(by=["Enrolled Care Programs"])["Patient Id"].size()
+                new_pod.rename(selected, inplace=True)
+                count_duration_by_care_program = pd.merge(count_duration_by_care_program, new_pod, how="outer", on="Enrolled Care Programs")
+
+                 
         # Mean Duration per Enrolled Care Program
-        mean_duration_by_care_program = pod.groupby(by=["Enrolled Care Programs"])["Duration (exact)"].mean()
         st.write("Mean Duration of Encounters per Enrolled Care Program ")
         st.write(mean_duration_by_care_program)
 
         #Get total number of Encounters per Enrolled Care Program 
-        count_duration_by_care_program = pod.groupby(by=["Enrolled Care Programs"])["Patient Id"].size()
         st.write("Total number of Encounters per Enrolled Care Program ")
         st.write(count_duration_by_care_program)
+                
+    #     # All of the patient ids
+    #     st.write(f"Patients in {selected_pod}")
+    #     vals = df.loc[df["User Name (First then Last)"] == selected_pod, "Patient Id"].unique()
+    #     display_columns = 16
+    #     padding_needed = (display_columns - len(vals) % display_columns) % display_columns
 
-        # All of the patient ids
-        st.write(f"Patients in {selected_pod}")
-        vals = df.loc[df["User Name (First then Last)"] == selected_pod, "Patient Id"].unique()
-        display_columns = 16
-        padding_needed = (display_columns - len(vals) % display_columns) % display_columns
+    #     # Pad the array with None (or np.nan)
+    #     padded_data = np.pad(vals, (0, padding_needed), 'constant', constant_values=np.nan)
 
-        # Pad the array with None (or np.nan)
-        padded_data = np.pad(vals, (0, padding_needed), 'constant', constant_values=np.nan)
-
-        st.dataframe(padded_data.reshape(-1, display_columns))
-
-
-    
+    #     st.dataframe(padded_data.reshape(-1, display_columns))
+                 
