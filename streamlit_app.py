@@ -34,14 +34,19 @@ if file_upload is not None:
             age_91_100 = st.checkbox("91-100", value=True)
 
         with st.expander("Select Insurance Plans"):
+            insurance_plans_checkboxes = []
             for plan in insurance_options:
-                st.checkbox(f"{plan}", value=True)
+                insurance_plans_checkboxes.append(st.checkbox(f"{plan}", value=True))
 
     # Age group logic
     df["Age"] = df["Birth Date"].apply(calculate_age)
     age_checkboxes = [age_0_10, age_11_20, age_21_30, age_31_40, age_41_50, age_51_60, age_61_70, age_71_80, age_81_90, age_91_100]
     selected_ages = select_ages(age_checkboxes)
     df = df[df["Age"].isin(selected_ages)]
+
+    # Insurance Group Logic
+    insurance_plans_selected = [plan for plan, val in zip(insurance_options, insurance_plans_checkboxes) if val]
+    df = df[df["Primary Plan Name"].isin(insurance_plans_selected)]
 
     pod_options = df["User Name (First then Last)"].unique()
     multiselect_pods = st.multiselect("Select your Pods", pod_options, placeholder="None Selected",)
