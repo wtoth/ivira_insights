@@ -14,8 +14,25 @@ if file_upload is not None:
             df = pd.read_csv(file_upload)
     else:
         st.write("upload file type failed")
+    
+    insurance_options = list(df["Primary Plan Name"].unique())
 
-    # st.write(df)
+    with st.sidebar:
+        with st.expander("Select Age Groups"):
+            zero_to_ten = st.checkbox("0-10", value=True)
+            eleven_to_twenty = st.checkbox("11-20", value=True)
+            twentyone_to_thirty = st.checkbox("21-30", value=True)
+            thirtyone_to_forty = st.checkbox("31-40", value=True)
+            fortyone_to_fifty = st.checkbox("41-50", value=True)
+            fiftyone_to_sixty = st.checkbox("51-60", value=True)
+            sixtyone_to_seventy = st.checkbox("61-70", value=True)
+            seventyone_to_eighty = st.checkbox("71-80", value=True)
+            eightyone_to_ninety = st.checkbox("81-90", value=True)
+            ninetyone_to_onehundred = st.checkbox("91-100", value=True)
+
+        with st.expander("Select Insurance Plans"):
+            for plan in insurance_options:
+                st.checkbox(f"{plan}", value=True)
 
     pod_options = df["User Name (First then Last)"].unique()
     multiselect_pods = st.multiselect("Select your Pods", pod_options, placeholder="None Selected",)
