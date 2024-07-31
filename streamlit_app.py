@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from selected_ages import select_ages, calculate_age
 
 st.title("Ivira Insights Report")
 
@@ -14,25 +15,33 @@ if file_upload is not None:
             df = pd.read_csv(file_upload)
     else:
         st.write("upload file type failed")
-    
+
+    df.dropna(subset="Patient Id", inplace=True)
+
     insurance_options = list(df["Primary Plan Name"].unique())
 
     with st.sidebar:
         with st.expander("Select Age Groups"):
-            zero_to_ten = st.checkbox("0-10", value=True)
-            eleven_to_twenty = st.checkbox("11-20", value=True)
-            twentyone_to_thirty = st.checkbox("21-30", value=True)
-            thirtyone_to_forty = st.checkbox("31-40", value=True)
-            fortyone_to_fifty = st.checkbox("41-50", value=True)
-            fiftyone_to_sixty = st.checkbox("51-60", value=True)
-            sixtyone_to_seventy = st.checkbox("61-70", value=True)
-            seventyone_to_eighty = st.checkbox("71-80", value=True)
-            eightyone_to_ninety = st.checkbox("81-90", value=True)
-            ninetyone_to_onehundred = st.checkbox("91-100", value=True)
+            age_0_10 = st.checkbox("1-10", value=True)
+            age_11_20 = st.checkbox("11-20", value=True)
+            age_21_30 = st.checkbox("21-30", value=True)
+            age_31_40 = st.checkbox("31-40", value=True)
+            age_41_50 = st.checkbox("41-50", value=True)
+            age_51_60 = st.checkbox("51-60", value=True)
+            age_61_70 = st.checkbox("61-70", value=True)
+            age_71_80 = st.checkbox("71-80", value=True)
+            age_81_90 = st.checkbox("81-90", value=True)
+            age_91_100 = st.checkbox("91-100", value=True)
 
         with st.expander("Select Insurance Plans"):
             for plan in insurance_options:
                 st.checkbox(f"{plan}", value=True)
+
+    # Age group logic
+    df["Age"] = df["Birth Date"].apply(calculate_age)
+    age_checkboxes = [age_0_10, age_11_20, age_21_30, age_31_40, age_41_50, age_51_60, age_61_70, age_71_80, age_81_90, age_91_100]
+    selected_ages = select_ages(age_checkboxes)
+    df = df[df["Age"].isin(selected_ages)]
 
     pod_options = df["User Name (First then Last)"].unique()
     multiselect_pods = st.multiselect("Select your Pods", pod_options, placeholder="None Selected",)
