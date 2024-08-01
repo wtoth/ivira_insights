@@ -86,6 +86,9 @@ if file_upload is not None:
         st.write(count_duration_by_care_program)
 
         st.write("Patients in Each Pod")
+        count_string = []
+        for key, val in patient_list.items():
+            st.write(f"{key}: {len(val)}")
         # Pad each list in patient_list with None to ensure they are all the same length
         max_len = max(len(lst) for lst in patient_list.values())
         padded_patient_list = {k: v + [None] * (max_len - len(v)) for k, v in patient_list.items()}
