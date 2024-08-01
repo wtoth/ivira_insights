@@ -54,6 +54,8 @@ if file_upload is not None:
     if multiselect_pods:
         mean_duration_by_care_program = pd.Series([])
         count_duration_by_care_program = pd.Series([])
+        patient_list = {}
+        patient_list_pods = {}
 
         for selected in multiselect_pods:
             curr_pod = df.loc[df["User Name (First then Last)"] == selected, :]
@@ -73,7 +75,8 @@ if file_upload is not None:
                 new_pod.rename(selected, inplace=True)
                 count_duration_by_care_program = pd.merge(count_duration_by_care_program, new_pod, how="outer", on="Enrolled Care Programs")
 
-                 
+            patient_list[selected] = df.loc[df["User Name (First then Last)"] == selected, "Patient Id"].unique().tolist()
+
         # Mean Duration per Enrolled Care Program
         st.write("Mean Duration of Encounters per Enrolled Care Program ")
         st.write(mean_duration_by_care_program)
@@ -81,15 +84,11 @@ if file_upload is not None:
         #Get total number of Encounters per Enrolled Care Program 
         st.write("Total number of Encounters per Enrolled Care Program ")
         st.write(count_duration_by_care_program)
-                
-    #     # All of the patient ids
-    #     st.write(f"Patients in {selected_pod}")
-    #     vals = df.loc[df["User Name (First then Last)"] == selected_pod, "Patient Id"].unique()
-    #     display_columns = 16
-    #     padding_needed = (display_columns - len(vals) % display_columns) % display_columns
 
-    #     # Pad the array with None (or np.nan)
-    #     padded_data = np.pad(vals, (0, padding_needed), 'constant', constant_values=np.nan)
-
-    #     st.dataframe(padded_data.reshape(-1, display_columns))
+        st.write("Patients in Each Pod")
+        # Pad each list in patient_list with None to ensure they are all the same length
+        max_len = max(len(lst) for lst in patient_list.values())
+        padded_patient_list = {k: v + [None] * (max_len - len(v)) for k, v in patient_list.items()}
+        patient_list_df = pd.DataFrame(padded_patient_list)
+        st.write(patient_list_df)                
                  
