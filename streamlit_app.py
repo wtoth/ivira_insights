@@ -79,7 +79,7 @@ if file_upload is not None:
             patient_list[selected] = df.loc[df["User Name (First then Last)"] == selected, "Patient Id"].unique().tolist()
 
             # calculate revenue and missing revenue by pod
-            grouped_df = curr_pod.groupby(['FirstName', 'LastName', 'User Name (First then Last)', 'Enrolled Care Programs']).agg({
+            grouped_df = curr_pod.groupby(['Patient Id', 'FirstName', 'LastName', 'User Name (First then Last)', 'Enrolled Care Programs']).agg({
                     'Duration (exact)': 'sum',
                     'Encounters Completed (Call type: Encounter YES)': 'sum'
                 }).reset_index()
@@ -91,8 +91,16 @@ if file_upload is not None:
                                                                                 axis=1,
                                                                                 result_type="expand")
             grouped_df["FullName"] = grouped_df['FirstName'] + " " + grouped_df['LastName']
-            positive_revenue = grouped_df[grouped_df["revenue"] > 0]
-            missing_revenue = grouped_df[grouped_df["revenue"] < 0]
+            #st.write(grouped_df)
+
+            #uncontacted_patient_ids = pd.DataFrame(grouped_df.groupby(by=["Patient Id"])["Encounters Completed (Call type: Encounter YES)"].sum(), columns=["Patient Id", "Encounters Completed (Call type: Encounter YES)"])
+            uncontacted_patient_ids = pd.DataFrame(grouped_df.groupby(by=["Patient Id"])["Encounters Completed (Call type: Encounter YES)"].sum()).reset_index()
+
+            uncontacted_patient_ids = uncontacted_patient_ids[uncontacted_patient_ids["Encounters Completed (Call type: Encounter YES)"] == 0]
+            uncontacted_patient_ids_list = uncontacted_patient_ids["Patient Id"].to_list()
+
+            positive_revenue = grouped_df[~grouped_df["Patient Id"].isin(uncontacted_patient_ids_list)] # the ~ means not .isin()
+            missing_revenue = grouped_df[grouped_df["Patient Id"].isin(uncontacted_patient_ids_list)]
             #st.write(positive_revenue)
             if current_revenue.empty:
                 current_revenue = pd.DataFrame([[positive_revenue["revenue"].sum()], [positive_revenue["revenue per minute"].mean()], [positive_revenue["Duration (exact)"].sum()]], columns=[selected])
