@@ -82,25 +82,26 @@ if file_upload is not None:
                     'Encounters Completed (Call type: Encounter YES)': 'sum'
                 }).reset_index()
             
-            grouped_df["revenue"] = grouped_df.apply(lambda x: 
+            grouped_df[["revenue", "revenue per minute"]] = grouped_df.apply(lambda x: 
                                                     calculate_revenue(x['Enrolled Care Programs'], 
                                                                                 x['Duration (exact)'], 
                                                                                 x['Encounters Completed (Call type: Encounter YES)']), 
-                                                                                axis=1)
+                                                                                axis=1,
+                                                                                result_type="expand")
             grouped_df["FullName"] = grouped_df['FirstName'] + " " + grouped_df['LastName']
             positive_revenue = grouped_df[grouped_df["revenue"] > 0]
             missing_revenue = grouped_df[grouped_df["revenue"] < 0]
 
             if current_revenue.empty:
-                current_revenue = pd.DataFrame([positive_revenue["revenue"].sum()], columns=[selected])
+                current_revenue = pd.DataFrame([[positive_revenue["revenue"].sum()], [positive_revenue["revenue per minute"].mean()]], columns=[selected])
             else:
-                current_revenue_tmp = pd.DataFrame([positive_revenue["revenue"].sum()], columns=[selected])
+                current_revenue_tmp = pd.DataFrame([[positive_revenue["revenue"].sum()], [positive_revenue["revenue per minute"].mean()]], columns=[selected])
                 current_revenue = pd.concat([current_revenue, current_revenue_tmp], axis=1)
 
             if uncontacted_revenue.empty:
-                uncontacted_revenue = pd.DataFrame([missing_revenue["revenue"].sum()], columns=[selected])
+                uncontacted_revenue = pd.DataFrame([[-1*missing_revenue["revenue"].sum()], [-1*missing_revenue["revenue per minute"].mean()]], columns=[selected])
             else:
-                uncontacted_revenue_tmp = pd.DataFrame([missing_revenue["revenue"].sum()], columns=[selected])
+                uncontacted_revenue_tmp = pd.DataFrame([[-1*missing_revenue["revenue"].sum()], [-1*missing_revenue["revenue per minute"].mean()]], columns=[selected])
                 uncontacted_revenue = pd.concat([uncontacted_revenue, uncontacted_revenue_tmp], axis=1)
 
             if uncontacted.empty:
@@ -121,10 +122,12 @@ if file_upload is not None:
 
         # Revenue by Pod
         st.write("Current Revenue Billed by Pod")
+        current_revenue.rename(index={0: "Total Revenue", 1: "Revenue per Minute"}, inplace=True)
         st.write(current_revenue)
 
         # Missing Revenue by Pod
         st.write("Amount of Revenue missing by Pod")
+        uncontacted_revenue.rename(index={0: "Total Revenue Lost", 1: "Revenue per Minute Lost"}, inplace=True)
         st.write(uncontacted_revenue)
 
         # Uncontacted Patients in Each Pod

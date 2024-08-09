@@ -25,4 +25,4 @@ def calculate_revenue(plan, hours, encounters):
     if encounters == 0:
         profit *= -1
 
-    return profit
+    return [profit, profit / hours]
