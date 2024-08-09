@@ -52,6 +52,8 @@ if file_upload is not None:
         count_duration_by_care_program = pd.Series([])
         current_revenue = pd.Series([])
         uncontacted_revenue = pd.Series([])
+        time_billed_by_care_program = pd.Series([])
+        time_unbilled_by_care_program = pd.Series([])
         uncontacted = pd.Series([])
         patient_list = {}
         patient_list_pods = {}
@@ -91,24 +93,45 @@ if file_upload is not None:
             grouped_df["FullName"] = grouped_df['FirstName'] + " " + grouped_df['LastName']
             positive_revenue = grouped_df[grouped_df["revenue"] > 0]
             missing_revenue = grouped_df[grouped_df["revenue"] < 0]
-
+            #st.write(positive_revenue)
             if current_revenue.empty:
-                current_revenue = pd.DataFrame([[positive_revenue["revenue"].sum()], [positive_revenue["revenue per minute"].mean()]], columns=[selected])
+                current_revenue = pd.DataFrame([[positive_revenue["revenue"].sum()], [positive_revenue["revenue per minute"].mean()], [positive_revenue["Duration (exact)"].sum()]], columns=[selected])
             else:
-                current_revenue_tmp = pd.DataFrame([[positive_revenue["revenue"].sum()], [positive_revenue["revenue per minute"].mean()]], columns=[selected])
+                current_revenue_tmp = pd.DataFrame([[positive_revenue["revenue"].sum()], [positive_revenue["revenue per minute"].mean()], [positive_revenue["Duration (exact)"].sum()]], columns=[selected])
                 current_revenue = pd.concat([current_revenue, current_revenue_tmp], axis=1)
 
             if uncontacted_revenue.empty:
-                uncontacted_revenue = pd.DataFrame([[-1*missing_revenue["revenue"].sum()], [-1*missing_revenue["revenue per minute"].mean()]], columns=[selected])
+                uncontacted_revenue = pd.DataFrame([[-1*missing_revenue["revenue"].sum()], [-1*missing_revenue["revenue per minute"].mean()], [missing_revenue["Duration (exact)"].sum()]], columns=[selected])
             else:
-                uncontacted_revenue_tmp = pd.DataFrame([[-1*missing_revenue["revenue"].sum()], [-1*missing_revenue["revenue per minute"].mean()]], columns=[selected])
+                uncontacted_revenue_tmp = pd.DataFrame([[-1*missing_revenue["revenue"].sum()], [-1*missing_revenue["revenue per minute"].mean()], [missing_revenue["Duration (exact)"].sum()]], columns=[selected])
                 uncontacted_revenue = pd.concat([uncontacted_revenue, uncontacted_revenue_tmp], axis=1)
+
+            time_billed_by_care_program_pod = positive_revenue.loc[positive_revenue["User Name (First then Last)"] == selected, :]
+            if time_billed_by_care_program.empty:
+                time_billed_by_care_program = time_billed_by_care_program_pod.groupby(by=["Enrolled Care Programs"])["Duration (exact)"].sum()
+                time_billed_by_care_program.rename(selected, inplace=True)
+            else:
+                new_pod = time_billed_by_care_program_pod.groupby(by=["Enrolled Care Programs"])["Duration (exact)"].sum()
+                new_pod.rename(selected, inplace=True)
+                time_billed_by_care_program = pd.merge(time_billed_by_care_program, new_pod, how="outer", on="Enrolled Care Programs")
+        
+            time_unbilled_by_care_program_pod = missing_revenue.loc[missing_revenue["User Name (First then Last)"] == selected, :]
+            if time_unbilled_by_care_program.empty:
+                time_unbilled_by_care_program = time_unbilled_by_care_program_pod.groupby(by=["Enrolled Care Programs"])["Duration (exact)"].sum()
+                time_unbilled_by_care_program.rename(selected, inplace=True)
+            else:
+                new_pod = time_unbilled_by_care_program_pod.groupby(by=["Enrolled Care Programs"])["Duration (exact)"].sum()
+                new_pod.rename(selected, inplace=True)
+                time_unbilled_by_care_program = pd.merge(time_unbilled_by_care_program, new_pod, how="outer", on="Enrolled Care Programs")
+        
 
             if uncontacted.empty:
                 uncontacted = pd.DataFrame(missing_revenue["FullName"].unique(), columns=[selected])
             else:
                 uncontacted_tmp = pd.DataFrame(missing_revenue["FullName"].unique(), columns=[selected])
                 uncontacted = pd.concat([uncontacted, uncontacted_tmp], axis=1)
+
+
 
         
 
@@ -122,13 +145,19 @@ if file_upload is not None:
 
         # Revenue by Pod
         st.write("Current Revenue Billed by Pod")
-        current_revenue.rename(index={0: "Total Revenue", 1: "Revenue per Minute"}, inplace=True)
+        current_revenue.rename(index={0: "Total Revenue", 1: "Revenue per Minute", 2:"Total Minutes Billed Per Pod"}, inplace=True)
         st.write(current_revenue)
 
         # Missing Revenue by Pod
         st.write("Amount of Revenue missing by Pod")
-        uncontacted_revenue.rename(index={0: "Total Revenue Lost", 1: "Revenue per Minute Lost"}, inplace=True)
+        uncontacted_revenue.rename(index={0: "Total Revenue Lost", 1: "Revenue per Minute Lost", 2:"Total Minutes Billed Per Pod"}, inplace=True)
         st.write(uncontacted_revenue)
+
+        st.write("Amount of Revenue Billed Broken down by pod and program")
+        st.write(time_billed_by_care_program)
+
+        st.write("Amount of Revenue Missing Broken down by pod and program")
+        st.write(time_unbilled_by_care_program)
 
         # Uncontacted Patients in Each Pod
         st.write("Uncontacted Patients in each Pod")
