@@ -179,7 +179,27 @@ if file_upload is not None:
         max_len = max(len(lst) for lst in patient_list.values())
         padded_patient_list = {k: v + [None] * (max_len - len(v)) for k, v in patient_list.items()}
         patient_list_df = pd.DataFrame(padded_patient_list)
-        st.write(patient_list_df)                
+        st.write(patient_list_df)  
+
+        # Revenue per minute per care program
+        grouped_per_care_program = df.groupby(['Enrolled Care Programs']).agg({
+                    'Duration (exact)': 'sum',
+                    'Encounters Completed (Call type: Encounter YES)': 'sum'
+                }).reset_index()
+        grouped_per_care_program[["revenue", "revenue per minute"]] = grouped_per_care_program.apply(lambda x: 
+                                                    calculate_revenue(x['Enrolled Care Programs'], 
+                                                                                x['Duration (exact)'], 
+                                                                                x['Encounters Completed (Call type: Encounter YES)']), 
+                                                                                axis=1,
+                                                                                result_type="expand")
+        st.write("Revenue per Minute by Program")
+        st.bar_chart(grouped_per_care_program, x='Enrolled Care Programs', 
+                     x_label="Enrolled Care Programs", 
+                     y='revenue per minute',
+                     y_label="Revenue per Minute (in USD)"
+                     
+                     )
+
                  
         # Create an altair graph showing how much is billed vs unbilled by program by pod
         # this is the case where multiple pods are selected
@@ -236,7 +256,7 @@ if file_upload is not None:
                 width=600,
                 height=400,
                 title=alt.TitleParams( 
-                    text='Billed and Unbilled Amounts by Enrolled Care Programs',
+                    text=f'{multiselect_pods[0]} Billed and Unbilled Amounts by Enrolled Care Programs',
                     anchor='middle'  # Centers the title
                 )
             )
