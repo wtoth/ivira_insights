@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import altair as alt
 from pathlib import Path
 from selected_ages import calculate_age
 from pricing_calculations import calculate_revenue
@@ -140,9 +141,6 @@ if file_upload is not None:
                 uncontacted = pd.concat([uncontacted, uncontacted_tmp], axis=1)
 
 
-
-        
-
         # Mean Duration per Enrolled Care Program
         st.write("Mean Duration of Encounters per Enrolled Care Program ")
         st.write(mean_duration_by_care_program)
@@ -183,5 +181,67 @@ if file_upload is not None:
         patient_list_df = pd.DataFrame(padded_patient_list)
         st.write(patient_list_df)                
                  
+        # Create an altair graph showing how much is billed vs unbilled by program by pod
+        # this is the case where multiple pods are selected
+        if isinstance(time_billed_by_care_program, pd.DataFrame):
+            billed_stack = time_billed_by_care_program.stack()
+            unbilled_stack = time_unbilled_by_care_program.stack()
+            billed_stack.index = [f'{col} {idx}' for idx, col in billed_stack.index]
+            unbilled_stack.index = [f'{col} {idx}' for idx, col in unbilled_stack.index]
+
+            # Convert to DataFrame and reset index
+            billed_unbilled_df = billed_stack.to_frame(name='Billed')
+            billed_unbilled_df = billed_unbilled_df.merge(unbilled_stack.to_frame(name="Unbilled"), how="outer",left_index=True, right_index=True)
+            billed_unbilled_df = billed_unbilled_df.reset_index()
+            billed_unbilled_df = billed_unbilled_df.melt('index', var_name='Type', value_name='Value')
+
+            chart = alt.Chart(billed_unbilled_df).mark_bar().encode(
+                x=alt.X('index:O', title="Pod & Program"),
+                y=alt.Y('Value:Q', title='Revenue in USD'),
+                color=alt.condition(
+                    alt.datum.Type == 'Billed',
+                    alt.value('#0000FF'),  # Blue for Billed
+                    alt.value('#FF0000')   # Red for Unbilled
+                ),
+                order=alt.Order('Type', sort='ascending')
+            ).properties(
+                width=600,
+                height=400,
+                title=alt.TitleParams(
+                    text='Billed and Unbilled Amounts by Enrolled Care Programs',
+                    anchor='middle'  # Centers the title
+                )
+            )
+            st.altair_chart(chart)
+        
+        # this is the case where there is only one column (aka a pandas series)
+        else:
+            billed_stack = time_billed_by_care_program.rename('Billed')
+            unbilled_stack = time_unbilled_by_care_program.rename('Unbilled')
+
+            # Combine into a single DataFrame
+            billed_unbilled_df = pd.concat([billed_stack, unbilled_stack], axis=1).reset_index()
+            df_melted = billed_unbilled_df.melt(id_vars='Enrolled Care Programs', value_vars=['Billed', 'Unbilled'], var_name='Status', value_name='Amount')
+
+            chart = alt.Chart(df_melted).mark_bar().encode(
+                x='Enrolled Care Programs:O',
+                y='Amount:Q',
+                color=alt.condition(
+                    alt.datum.Status == 'Billed',
+                    alt.value('#0000FF'),  # Blue for Billed
+                    alt.value('#FF0000')   # Red for Unbilled
+                ),
+                order=alt.Order('Status', sort='ascending')
+            ).properties(
+                width=600,
+                height=400,
+                title=alt.TitleParams( 
+                    text='Billed and Unbilled Amounts by Enrolled Care Programs',
+                    anchor='middle'  # Centers the title
+                )
+            )
+            st.altair_chart(chart)
+
+        
 
         
