@@ -2,10 +2,12 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import time
 from datetime import datetime, timedelta
 import streamlit_date_picker
 from date import filter_by_date
 from calc_revenue_per_minute import calc_revenue_per_minute
+from patients_near_billing import user_patients_close_to_billing, pod_patients_close_to_billing, pharmacy_patients_close_to_billing
 
 st.title("Ivira Insights Report")
 # current upload file is Analytics Assessment Report 2024-07-01 2024-07-31.xlsx
@@ -52,6 +54,8 @@ with st.sidebar:
                 insurance_plans_checkboxes.append(st.checkbox(f"{plan}", value=True))
 
 if file_upload is not None:
+    time.sleep(0.1) # this delays long enough to prevent an error
+
     # filter by date
     df = filter_by_date(df, start_date, end_date)
     #st.write(df)
@@ -59,3 +63,16 @@ if file_upload is not None:
     st.write("Patients with the highest revenue per minute of care")
     rev_per_minute_data = calc_revenue_per_minute(df)
     st.write(rev_per_minute_data[["Patient Id", "Enrolled Care Program", "revenue per minute", "remaining minutes"]])
+
+    # metric for who 
+    st.write("Number of Patients billed greater than 50\% of their time by Pharmacy")
+    pharmacy_patients_count = pharmacy_patients_close_to_billing(df)
+    st.write(pharmacy_patients_count)
+
+    st.write("Number of Patients billed greater than 50\% of their time by Pod")
+    pod_patients_count = pod_patients_close_to_billing(df)
+    st.write(pod_patients_count)
+
+    st.write("Number of Patients billed greater than 50\% of their time by User Name")
+    user_patients_count = user_patients_close_to_billing(df)
+    st.write(user_patients_count)
