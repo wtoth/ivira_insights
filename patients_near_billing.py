@@ -59,7 +59,7 @@ def percent_billed(program, duration):
         return [0,0, 0, 0]
 
 # this just runs the above functions
-def user_patients_close_to_billing(analytics_assessment):
+def user_patients_close_to_billing(analytics_assessment, billing_percent):
     analytics_assessment["duration in seconds"] = analytics_assessment["Duration (exact)"].apply(duration_to_seconds)
     patients_by_duration = analytics_assessment.groupby(by=["Patient Id", "Enrolled Care Program"])["duration in seconds"].sum().reset_index()
 
@@ -69,7 +69,7 @@ def user_patients_close_to_billing(analytics_assessment):
                      on="Patient Id", 
                      how="left") # merge in the Pharmacy Name, POD, and User Name
 
-    filtered_df = merged_df[merged_df['percent billed'] > 0.5]
+    filtered_df = merged_df[merged_df['percent billed'] > billing_percent]
 
     user_patients_billed_over_50_perc = filtered_df.groupby(['User Name (First then Last)'])['Patient Id'].nunique().reset_index()
     user_patients_billed_over_50_perc.rename(columns={'Patient Id': 'patient_count'}, inplace=True)
@@ -78,7 +78,7 @@ def user_patients_close_to_billing(analytics_assessment):
     return user_patients_billed_over_50_perc
 
 
-def pod_patients_close_to_billing(analytics_assessment):
+def pod_patients_close_to_billing(analytics_assessment, billing_percent):
     analytics_assessment["duration in seconds"] = analytics_assessment["Duration (exact)"].apply(duration_to_seconds)
     patients_by_duration = analytics_assessment.groupby(by=["Patient Id", "Enrolled Care Program"])["duration in seconds"].sum().reset_index()
 
@@ -88,7 +88,7 @@ def pod_patients_close_to_billing(analytics_assessment):
                      on="Patient Id", 
                      how="left") # merge in the Pharmacy Name, POD, and User Name
 
-    filtered_df = merged_df[merged_df['percent billed'] > 0.5]
+    filtered_df = merged_df[merged_df['percent billed'] > billing_percent]
 
     pod_patients_billed_over_50_perc = filtered_df.groupby(['POD'])['Patient Id'].nunique().reset_index()
     pod_patients_billed_over_50_perc.rename(columns={'Patient Id': 'patient_count'}, inplace=True)
@@ -96,7 +96,7 @@ def pod_patients_close_to_billing(analytics_assessment):
 
     return pod_patients_billed_over_50_perc
 
-def pharmacy_patients_close_to_billing(analytics_assessment):
+def pharmacy_patients_close_to_billing(analytics_assessment, billing_percent):
     analytics_assessment["duration in seconds"] = analytics_assessment["Duration (exact)"].apply(duration_to_seconds)
     patients_by_duration = analytics_assessment.groupby(by=["Patient Id", "Enrolled Care Program"])["duration in seconds"].sum().reset_index()
 
@@ -106,7 +106,7 @@ def pharmacy_patients_close_to_billing(analytics_assessment):
                      on="Patient Id", 
                      how="left") # merge in the Pharmacy Name, POD, and User Name
 
-    filtered_df = merged_df[merged_df['percent billed'] > 0.5]
+    filtered_df = merged_df[merged_df['percent billed'] > billing_percent]
 
     pharmacy_patients_billed_over_50_perc = filtered_df.groupby(['Pharmacy Name'])['Patient Id'].nunique().reset_index()
     pharmacy_patients_billed_over_50_perc.rename(columns={'Patient Id': 'patient_count'}, inplace=True)

@@ -7,6 +7,7 @@ from selected_ages import calculate_age
 from pricing_calculations import calculate_revenue
 
 st.title("Ivira Insights Report")
+# the original upload file is called analytic_report_jun_ivira.xlsx
 
 with st.sidebar:
     file_upload = st.file_uploader("upload file", type={"xlsx", "csv"})

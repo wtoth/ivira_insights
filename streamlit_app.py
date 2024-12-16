@@ -2,13 +2,16 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from pathlib import Path
+import plotly.express as px
 import time
 from datetime import datetime, timedelta
 import streamlit_date_picker
 from date import filter_by_date
+from selected_ages import calculate_age
 from calc_revenue_per_minute import calc_revenue_per_minute
 from patients_near_billing import user_patients_close_to_billing, pod_patients_close_to_billing, pharmacy_patients_close_to_billing
 
+st.set_page_config(layout='wide')
 st.title("Ivira Insights Report")
 # current upload file is Analytics Assessment Report 2024-07-01 2024-07-31.xlsx
 
@@ -54,25 +57,63 @@ with st.sidebar:
                 insurance_plans_checkboxes.append(st.checkbox(f"{plan}", value=True))
 
 if file_upload is not None:
-    time.sleep(0.1) # this delays long enough to prevent an error
+
+    # Age group logic
+    df["Age"] = df["Birth Date"].apply(calculate_age)
+    df = df[df["Age"].isin(range(age_range[0], age_range[1] + 1))]
+
+    # Insurance Group Logic
+    insurance_plans_selected = [plan for plan, val in zip(insurance_options, insurance_plans_checkboxes) if val]
+    df = df[df["Primary Plan Name"].isin(insurance_plans_selected)]
+
+    time.sleep(0.5) # this delays long enough to prevent an error
 
     # filter by date
     df = filter_by_date(df, start_date, end_date)
     #st.write(df)
 
-    st.write("Patients with the highest revenue per minute of care")
-    rev_per_minute_data = calc_revenue_per_minute(df)
-    st.write(rev_per_minute_data[["Patient Id", "Enrolled Care Program", "revenue per minute", "remaining minutes"]])
+    st.header("Patients with highest return per minute of care")
+    with st.container(border=True):
+        rev_per_minute_data = calc_revenue_per_minute(df)
+        st.data_editor(rev_per_minute_data[["Patient Id", "Enrolled Care Program", "revenue per minute", "remaining minutes"]], hide_index=True, use_container_width=True)
 
-    # metric for who 
-    st.write("Number of Patients billed greater than 50\% of their time by Pharmacy")
-    pharmacy_patients_count = pharmacy_patients_close_to_billing(df)
-    st.write(pharmacy_patients_count)
+    st.header("Number of Patients billed greater than 50\%")
+    with st.container(border=True):
+        col_1, col_2 = st.columns(2)
+        with st.container():
+            with col_1:
+                col_1.subheader("Number of Patients billed greater than 50\% of their time by Pod")
+                nested_col_1, nested_col_2 = st.columns(2) 
+                with nested_col_1:
+                    pod_patients_count = pod_patients_close_to_billing(df, 0.5)
+                    st.dataframe(pod_patients_count, hide_index=True)
+                with nested_col_2:
+                    st.bar_chart(pod_patients_count, x="POD", y="patient_count")
+        
+        with st.container():
+            with col_2:
+                col_2.subheader("Number of Patients billed greater than 50\% of their time by User Name")
+                nested_col_3, nested_col_4 = st.columns(2) 
+                with nested_col_3:
+                    user_patients_count = user_patients_close_to_billing(df, 0.5).rename(columns={"User Name (First then Last)":"Employee"})
+                    st.dataframe(user_patients_count, hide_index=True)
+                with nested_col_4:
+                    st.bar_chart(user_patients_count.iloc[:10], x="Employee", y="patient_count")
 
-    st.write("Number of Patients billed greater than 50\% of their time by Pod")
-    pod_patients_count = pod_patients_close_to_billing(df)
-    st.write(pod_patients_count)
 
-    st.write("Number of Patients billed greater than 50\% of their time by User Name")
-    user_patients_count = user_patients_close_to_billing(df)
-    st.write(user_patients_count)
+    # breakdown billed hours by call type
+    billed_hours_by_user_type = df.groupby(by=["User Type"])["duration in seconds"].sum().reset_index()
+    billed_hours_by_user_type["duration in hours"] = round(billed_hours_by_user_type["duration in seconds"] / 3600, 2)
+    st.dataframe(billed_hours_by_user_type)
+    st.bar_chart(billed_hours_by_user_type, x="User Type", y="duration in hours")
+    
+    st.title("Billed Hours by User Type")
+    fig = px.pie(
+        billed_hours_by_user_type, 
+        names="User Type", 
+        values="duration in hours",
+        title="Distribution of Billed Hours by User Type"
+    )
+
+    # Display Pie Chart
+    st.plotly_chart(fig)
