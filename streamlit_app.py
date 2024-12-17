@@ -104,16 +104,33 @@ if file_upload is not None:
     # breakdown billed hours by call type
     billed_hours_by_user_type = df.groupby(by=["User Type"])["duration in seconds"].sum().reset_index()
     billed_hours_by_user_type["duration in hours"] = round(billed_hours_by_user_type["duration in seconds"] / 3600, 2)
-    st.dataframe(billed_hours_by_user_type)
-    st.bar_chart(billed_hours_by_user_type, x="User Type", y="duration in hours")
+    # st.dataframe(billed_hours_by_user_type)
     
-    st.title("Billed Hours by User Type")
-    fig = px.pie(
-        billed_hours_by_user_type, 
-        names="User Type", 
-        values="duration in hours",
-        title="Distribution of Billed Hours by User Type"
-    )
+    
 
-    # Display Pie Chart
-    st.plotly_chart(fig)
+    st.title("Billed Hours by User Type")
+    with st.container(border=True):
+        user_type_col_1, user_type_col_2 = st.columns(2) 
+        with user_type_col_1: 
+            fig = px.pie(
+                billed_hours_by_user_type, 
+                names="User Type", 
+                values="duration in hours",
+                title="Distribution of Billed Hours by User Type"
+            )
+            st.plotly_chart(fig)
+        with user_type_col_2:
+            st.subheader("")
+            st.bar_chart(billed_hours_by_user_type, x="User Type", y="duration in hours", )
+
+    st.title("Billed Hours Broken down by Call Type")
+    with st.container(border=True):
+        billed_hours_by_care_type = df.groupby(by=["Call Type Selected"])["duration in seconds"].sum().reset_index()
+        billed_hours_by_care_type["duration in minutes"] = round(billed_hours_by_care_type["duration in seconds"] / 60, 2)
+        billed_hours_by_care_type.sort_values(by="duration in minutes", ascending=False, inplace=True)
+        hours_breakdown_col_1, hours_breakdown_col_2 = st.columns(2) 
+        with hours_breakdown_col_1: 
+            st.dataframe(billed_hours_by_care_type[["Call Type Selected", "duration in minutes"]], hide_index=True)
+        with hours_breakdown_col_2: 
+            st.subheader("Top 5 Call Types")
+            st.bar_chart(billed_hours_by_care_type.iloc[:5], x="Call Type Selected", y="duration in minutes", y_label ="Hours for each call")
