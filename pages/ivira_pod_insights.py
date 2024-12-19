@@ -3,13 +3,21 @@ import pandas as pd
 import numpy as np
 import altair as alt
 from pathlib import Path
+from navigation import links
 from selected_ages import calculate_age
 from pricing_calculations import calculate_revenue
 
-st.title("Ivira Insights Report")
+st.set_page_config(
+    page_title="Pod Insights",
+    page_icon="images/ivira-favicon.png",
+)
+
+st.title("Ivira Pod Insights")
 # the original upload file is called analytic_report_jun_ivira.xlsx
 
 with st.sidebar:
+    links() # this imports our navigation links
+
     file_upload = st.file_uploader("upload file", type={"xlsx", "csv"})
     if file_upload is not None:
         suffix = Path(file_upload.name).suffix

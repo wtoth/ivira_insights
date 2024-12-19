@@ -7,15 +7,23 @@ import time
 from datetime import datetime, timedelta
 import streamlit_date_picker
 from date import filter_by_date
+from navigation import links
 from selected_ages import calculate_age
 from calc_revenue_per_minute import calc_revenue_per_minute
 from patients_near_billing import user_patients_close_to_billing, pod_patients_close_to_billing, pharmacy_patients_close_to_billing
 
-st.set_page_config(layout='wide')
-st.title("Ivira Insights Report")
+st.set_page_config(
+    layout='wide',
+    page_title="Ivira Business Insights",
+    page_icon="images/ivira-favicon.png",
+)
+
+st.title("Ivira Business Insights")
 # current upload file is Analytics Assessment Report 2024-07-01 2024-07-31.xlsx
 
 with st.sidebar:
+    links() # this imports our navigation links
+
     file_upload = st.file_uploader("upload file", type={"xlsx", "csv"})
     if file_upload is not None:
         suffix = Path(file_upload.name).suffix
