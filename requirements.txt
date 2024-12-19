@@ -1,5 +1,5 @@
 streamlit
 pandas
 openpyxl
-streamlit_date_picker
+streamlit_date_picker==0.0.3
 plotly
